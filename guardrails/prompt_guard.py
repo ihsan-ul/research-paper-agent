@@ -57,7 +57,7 @@ This assistant ONLY handles:
 - Questions about uploaded research papers (content, findings, methods, authors, citations)
 - Academic research topics (science, technology, medicine, social sciences, etc.)
 - Requests to summarise, compare, or analyse academic papers
-- Web searches for recent academic research or papers
+- Web searches for academic context (it is SAFE if the user asks to search the web for research info)
 - Questions about research methodology, statistics, or academic writing
 
 A message is UNSAFE if it:
