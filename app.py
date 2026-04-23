@@ -285,11 +285,18 @@ with tab_chat:
                             indexed_sources=indexed,
                         )
                     except Exception as e:
-                        if "rate_limit" in str(e).lower():
-                            st.error("⚠️ Groq is overwhelmed! Please wait 10s.")
+                        error_msg = str(e).lower()
+                        if "rate_limit" in error_msg or "429" in error_msg:
+                            safe_response = "⚠️ **API Rate Limit Exceeded:** The AI provider is currently overwhelmed. Please wait about 10-20 seconds and try your question again."
+                        elif "timeout" in error_msg:
+                            safe_response = "⏳ **Connection Timeout:** The request took too long to process. Please try asking a slightly simpler question."
                         else:
-                            st.error(f"❌ Error: {e}")
-                        st.stop()
+                            safe_response = f"❌ **Unexpected System Error:** I couldn't process that request right now. (Error details: `{e}`)"
+                        
+                        # Display the error politely as a chat message instead of crashing the app
+                        st.markdown(safe_response)
+                        append_ai_message(st.session_state, safe_response)
+                        st.stop() # Stops execution of this specific run, but keeps the app alive
 
                 # C. Render the result details
                 if not result.get("guard_passed"):
