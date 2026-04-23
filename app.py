@@ -21,43 +21,81 @@ from memory.session_memory import (
 )
 
 # ── Page config ───────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Research Paper Agent",
-    page_icon="🔬",
-    layout="wide",
-)
+with tab_chat:
+    header_col1, header_col2 = st.columns([0.1, 0.9])
+    with header_col1:
+        st.title("🔬")
+    with header_col2:
+        st.title("Research Intelligence Agent")
+        st.caption("AI-Powered Synthesis & Multi-Agent Retrieval")
+    
+    st.markdown("---")
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
+# ── ADVANCED UI STYLING ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .block-container { padding-top: 3rem; }
-    .stChatMessage { border-radius: 12px; }
-    .route-badge {
-        display: inline-block;
-        background: #1e3a5f;
-        color: #7eb8f7;
-        font-size: 0.72rem;
-        padding: 2px 8px;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+    /* Global Typography & Background */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #0e1117;
+    }
+
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: #161b22;
+        border-right: 1px solid #30363d;
+    }
+    
+    /* Modern Chat Message Styling */
+    [data-testid="stChatMessage"] {
+        border-radius: 15px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        border: 1px solid #30363d;
+        background-color: #161b22;
+    }
+    
+    /* Differentiate User vs Assistant with subtle borders */
+    [data-testid="stChatMessage"]:nth-child(even) {
+        border-left: 5px solid #238636; /* User green */
+    }
+    [data-testid="stChatMessage"]:nth-child(odd) {
+        border-left: 5px solid #1f6feb; /* Assistant blue */
+    }
+
+    /* Status Pills for Sidebar */
+    .status-pill {
+        padding: 4px 12px;
         border-radius: 20px;
-        margin-bottom: 4px;
-    }
-    .guard-badge {
+        font-size: 0.8rem;
+        font-weight: 600;
         display: inline-block;
-        background: #3b0f0f;
-        color: #f77;
-        font-size: 0.72rem;
-        padding: 2px 8px;
-        border-radius: 20px;
+        margin-right: 5px;
     }
-    .layer-box {
-        border-radius: 8px;
-        padding: 12px 16px;
-        margin: 6px 0;
-        font-size: 0.9rem;
+    .status-ok { background: #238636; color: white; }
+    .status-off { background: #da3633; color: white; }
+
+    /* Suggested Question Pills */
+    .stButton > button {
+        border-radius: 20px !important;
+        border: 1px solid #30363d !important;
+        background-color: #21262d !important;
+        color: #c9d1d9 !important;
+        transition: all 0.3s ease;
     }
-    .layer-pass  { background: #0d2d1a; border-left: 4px solid #2ecc71; }
-    .layer-block { background: #2d0d0d; border-left: 4px solid #e74c3c; }
-    .layer-skip  { background: #1a1a2e; border-left: 4px solid #555; color: #888; }
+    .stButton > button:hover {
+        border-color: #58a6ff !important;
+        background-color: #30363d !important;
+        transform: translateY(-2px);
+    }
+
+    /* Clean up the Chat Input */
+    [data-testid="stChatInput"] {
+        border-top: 1px solid #30363d;
+        padding-top: 1rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,15 +103,18 @@ st.markdown("""
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("🔬 Research Agent")
-    st.caption("Powered by Groq · LangGraph · ChromaDB")
-
-    st.subheader("⚙️ API Status")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Groq",      "✅" if GROQ_API_KEY      else "❌")
-    col2.metric("LangSmith", "✅" if LANGCHAIN_API_KEY  else "❌")
-    col3.metric("Tavily",    "✅" if TAVILY_API_KEY     else "❌")
-
+    
+    # Compact Status Bar
+    status_cols = st.columns(3)
+    with status_cols[0]:
+        st.markdown(f'<div class="status-pill {"status-ok" if GROQ_API_KEY else "status-off"}">Groq</div>', unsafe_allow_html=True)
+    with status_cols[1]:
+        st.markdown(f'<div class="status-pill {"status-ok" if LANGCHAIN_API_KEY else "status-off"}">Trace</div>', unsafe_allow_html=True)
+    with status_cols[2]:
+        st.markdown(f'<div class="status-pill {"status-ok" if TAVILY_API_KEY else "status-off"}">Web</div>', unsafe_allow_html=True)
+    
     st.divider()
+    # ... keep uploader logic ...
 
     st.subheader("📄 Upload Papers")
     
@@ -209,13 +250,13 @@ with tab_chat:
             with st.chat_message(role):
                 st.markdown(msg.content)
 
-    # Suggested questions sit between the chat history and the input box
     if st.session_state.get("suggested_questions"):
-        st.markdown("💡 **Suggested Questions:**")
-        for q in st.session_state["suggested_questions"]:
-            if st.button(q, key=f"btn_{q}"):
+        st.write("💡 **Quick Inquiries:**")
+        cols = st.columns(len(st.session_state["suggested_questions"]))
+        for idx, q in enumerate(st.session_state["suggested_questions"]):
+            if cols[idx].button(q[:50] + "...", key=f"btn_{idx}", use_container_width=True, help=q):
                 st.session_state["active_prompt"] = q
-                st.session_state["suggested_questions"] = [] # Clear them after clicking
+                st.session_state["suggested_questions"] = [] 
                 st.rerun()
 
     # Chat input is rendered last, pinning it to the bottom
