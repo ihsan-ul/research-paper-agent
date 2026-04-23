@@ -211,18 +211,15 @@ tab_chat, tab_guard, tab_arch = st.tabs([
 # TAB 1 — RESEARCH CHAT
 # ════════════════════════════════════════════════════════════════════════════
 with tab_chat:
-    st.title("🔬 Research Paper Intelligence Agent")
-    st.caption(
-        "Upload papers in the sidebar, then ask anything. "
-        "The multi-agent pipeline retrieves from your PDFs, searches the web, and synthesises grounded answers."
-    )
+    # 1. Centered "Center Stage" Header
+    header_col1, header_col2 = st.columns([0.1, 0.9])
+    with header_col1:
+        st.title("🔬")
+    with header_col2:
+        st.title("Research Intelligence Agent")
+        st.caption("AI-Powered Synthesis & Multi-Agent Retrieval")
     
     st.markdown("---")
-
-    if "active_prompt" not in st.session_state:
-        st.session_state["active_prompt"] = None
-    if "suggested_questions" not in st.session_state:
-        st.session_state["suggested_questions"] = []
 
     # --- FIX: Create a dedicated container for the chat messages ---
     # Everything put in this container will ALWAYS stay above the chat input.
