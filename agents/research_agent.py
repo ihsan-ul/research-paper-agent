@@ -43,8 +43,14 @@ class AgentState(TypedDict):
 
 # ── LLM helper ────────────────────────────────────────────────────────────────
 
-def _llm(temperature: float = 0.3) -> ChatGroq:
-    return ChatGroq(api_key=GROQ_API_KEY, model=GROQ_MODEL, temperature=temperature)
+def _llm():
+    """Returns the Groq LLM instance with retry logic."""
+    return ChatGroq(
+        model="llama-3.1-70b-versatile", 
+        temperature=0,
+        groq_api_key=GROQ_API_KEY,
+        max_retries=3,  
+    )
 
 
 # ── Node 1: Guardrail ─────────────────────────────────────────────────────────
