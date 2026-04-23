@@ -26,10 +26,8 @@ from core.embeddings import get_embeddings
 def get_vector_store() -> Chroma:
     """Returns (or creates) the persistent ChromaDB vector store."""
     
-    # 1. Safely create a persistent client (this avoids the singleton crash)
     client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
     
-    # 2. Pass that explicit client to LangChain
     return Chroma(
         client=client,
         collection_name=CHROMA_COLLECTION,
@@ -105,6 +103,16 @@ def list_indexed_sources() -> List[str]:
         return sorted(sources)
     except Exception:
         return []
+        
+def delete_source(filename: str) -> None:
+    """Deletes all chunks associated with a specific filename from ChromaDB."""
+    client = get_chroma_client()
+    try:
+        # Get the collection and delete chunks where the source matches the filename
+        collection = client.get_collection(CHROMA_COLLECTION)
+        collection.delete(where={"source": filename})
+    except Exception:
+        pass       
 
 
 def clear_collection() -> None:
