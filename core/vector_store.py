@@ -25,10 +25,15 @@ from core.embeddings import get_embeddings
 @st.cache_resource
 def get_vector_store() -> Chroma:
     """Returns (or creates) the persistent ChromaDB vector store."""
+    
+    # 1. Safely create a persistent client (this avoids the singleton crash)
+    client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+    
+    # 2. Pass that explicit client to LangChain
     return Chroma(
+        client=client,
         collection_name=CHROMA_COLLECTION,
         embedding_function=get_embeddings(),
-        persist_directory=CHROMA_PERSIST_DIR,
     )
 
 
@@ -109,4 +114,5 @@ def clear_collection() -> None:
         store.delete_collection()
     except Exception:
         pass
+    
     st.cache_resource.clear()
