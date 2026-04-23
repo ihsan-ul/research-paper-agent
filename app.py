@@ -234,7 +234,7 @@ with tab_chat:
         history = get_history(st.session_state)
         if not history:
             with st.chat_message("assistant"):
-                st.markdown(""👋 Hello! Upload one or more research papers in the sidebar, "
+                st.markdown("👋 Hello! Upload one or more research papers in the sidebar, "
                     "then ask me anything about them.\n\n"
                     "**Things I can do:**\n"
                     "- 📖 Answer questions from your papers (RAG + Cohere reranking)\n"
