@@ -234,7 +234,14 @@ with tab_chat:
         history = get_history(st.session_state)
         if not history:
             with st.chat_message("assistant"):
-                st.markdown("👋 Hello! Upload papers in the sidebar to get started.")
+                st.markdown(""👋 Hello! Upload one or more research papers in the sidebar, "
+                    "then ask me anything about them.\n\n"
+                    "**Things I can do:**\n"
+                    "- 📖 Answer questions from your papers (RAG + Cohere reranking)\n"
+                    "- 🌐 Search the web for recent research (Tavily)\n"
+                    "- 📝 Generate structured paper summaries\n"
+                    "- 🔍 Compare methods or findings across papers\n"
+                    "- 🛡️ Protected against prompt injection (see the Guardrail Demo tab)")
 
         for msg in history:
             role = "user" if msg.__class__.__name__ == "HumanMessage" else "assistant"
