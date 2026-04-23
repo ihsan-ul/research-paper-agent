@@ -150,11 +150,11 @@ with st.sidebar:
     if col_a.button("🗑️ Clear Chat", use_container_width=True):
         clear_history(st.session_state)
         st.rerun()
-    if col_b.button("💥 Clear DB", use_container_width=True):
+    if col_b.button("🗑️ Clear All Papers", use_container_width=True):
         clear_collection()
         st.session_state["uploader_key"] += 1 
         st.session_state["suggested_questions"] = [] 
-        st.success("Vector store cleared.")
+        st.success("Library cleared. All papers removed.") # Updated message
         st.rerun()
 
     st.divider()
