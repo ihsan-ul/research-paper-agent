@@ -246,12 +246,12 @@ with tab_chat:
                 st.markdown(msg.content)
 
     if st.session_state.get("suggested_questions"):
-        st.write("💡 **Quick Inquiries:**")
-        cols = st.columns(len(st.session_state["suggested_questions"]))
+        st.markdown("💡 **Suggested Questions:**")
         for idx, q in enumerate(st.session_state["suggested_questions"]):
-            if cols[idx].button(q[:50] + "...", key=f"btn_{idx}", use_container_width=True, help=q):
+            # Full-width buttons ensure the entire research question is visible
+            if st.button(q, key=f"btn_{idx}", use_container_width=True):
                 st.session_state["active_prompt"] = q
-                st.session_state["suggested_questions"] = [] 
+                st.session_state["suggested_questions"] = [] # Clear them after selection
                 st.rerun()
 
     # Chat input is rendered last, pinning it to the bottom
