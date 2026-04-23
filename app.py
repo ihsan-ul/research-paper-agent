@@ -9,7 +9,7 @@ import streamlit as st
 
 from config.settings import GROQ_API_KEY, LANGCHAIN_API_KEY, TAVILY_API_KEY
 from core.pdf_processor import extract_documents
-from core.vector_store import add_documents, list_indexed_sources, clear_collection
+from core.vector_store import add_documents, list_indexed_sources, clear_collection, delete_source
 from core.suggestions import generate_suggested_questions  # NEW IMPORT
 from agents.research_agent import run_agent
 from guardrails.prompt_guard import check_input, _pattern_check, _llm_check
@@ -91,15 +91,21 @@ with st.sidebar:
         key=f"uploader_{st.session_state['uploader_key']}"
     )
 
-    # 2. Detect newly added files to target the right one for questions
+    # 2. Detect newly added or removed files
     current_filenames = [f.name for f in uploaded_files] if uploaded_files else []
     newly_added_files = [f for f in current_filenames if f not in st.session_state["previous_uploaded_files"]]
+    removed_files = [f for f in st.session_state["previous_uploaded_files"] if f not in current_filenames]
     
+    # If a file was removed via the 'X', delete its chunks from the database!
+    if removed_files:
+        for f in removed_files:
+            delete_source(f)
+        st.session_state["suggested_questions"] = []  # Clear stale questions
+
     if current_filenames != st.session_state["previous_uploaded_files"]:
         st.session_state["previous_uploaded_files"] = current_filenames
-        st.session_state["suggested_questions"] = []  # Clear stale questions instantly
 
-    # Target the newest file for questions (or fallback to the first file if one was deleted)
+    # Target the newest file for questions (or fallback to the first file)
     target_file = newly_added_files[-1] if newly_added_files else (current_filenames[0] if current_filenames else None)
 
     if uploaded_files:
