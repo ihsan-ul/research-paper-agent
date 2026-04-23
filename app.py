@@ -286,19 +286,37 @@ with tab_chat:
 
                 # C. Render the result details
                 if not result.get("guard_passed"):
-                    st.markdown("🛡️ **Blocked by guardrail**")
+                    reason = result.get("guard_reason", "Input blocked by safety guardrail.")
+                    st.markdown('<span class="guard-badge">🛡️ BLOCKED by guardrail</span>', unsafe_allow_html=True)
+                    response_text = (
+                        f"⚠️ **I couldn't process that request.**\n\n"
+                        f"**Reason:** {reason}\n\n"
+                        "Please rephrase your question about the research papers."
+                    )
+                    st.markdown(response_text)
+                    append_ai_message(st.session_state, response_text)
+                
                 else:
                     route = result.get("route", "—")
-                    route_labels = {"rag": "📖 RAG", "web": "🌐 Web", "both": "📖+🌐"}
-                    st.markdown(f'`{route_labels.get(route, route)}`')
+                    route_labels = {
+                        "rag":       "📖 RAG · Papers",
+                        "web":       "🌐 Web Search",
+                        "both":      "📖 RAG + 🌐 Web",
+                        "summarize": "📝 Summarizer",
+                        "chat":      "💬 Chat",
+                    }
+                    badge = route_labels.get(route, route)
+                    st.markdown(f'<span class="route-badge">{badge}</span>', unsafe_allow_html=True)
 
-                    answer = result.get("final_answer") or "No response."
+                    answer = result.get("final_answer") or "I couldn't generate a response. Please try again."
                     st.markdown(answer)
-                    
-                    # Show context expanders
-                    if result.get("rag_context"):
-                        with st.expander("📎 View Paper Context"):
-                            st.text(result["rag_context"][:1000])
+
+                    if result.get("rag_context") and route in {"rag", "both"}:
+                        with st.expander("📎 Retrieved context (RAG)", expanded=False):
+                            st.text(result["rag_context"][:2000])
+                    if result.get("web_context") and route in {"web", "both"}:
+                        with st.expander("🌐 Web search results", expanded=False):
+                            st.text(result["web_context"][:2000])
 
                     append_ai_message(st.session_state, answer)
 
