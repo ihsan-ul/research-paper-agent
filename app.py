@@ -75,7 +75,7 @@ with st.sidebar:
 
     st.divider()
 
-   st.subheader("📄 Upload Papers")
+    st.subheader("📄 Upload Papers")
     
     # 1. Initialize states for file tracking
     if "uploader_key" not in st.session_state:
