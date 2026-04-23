@@ -21,15 +21,11 @@ from memory.session_memory import (
 )
 
 # ── Page config ───────────────────────────────────────────────────────────────
-with tab_chat:
-    header_col1, header_col2 = st.columns([0.1, 0.9])
-    with header_col1:
-        st.title("🔬")
-    with header_col2:
-        st.title("Research Intelligence Agent")
-        st.caption("AI-Powered Synthesis & Multi-Agent Retrieval")
-    
-    st.markdown("---")
+st.set_page_config(
+    page_title="Research Paper Agent",
+    page_icon="🔬",
+    layout="wide",
+)
 
 # ── ADVANCED UI STYLING ───────────────────────────────────────────────────────
 st.markdown("""
