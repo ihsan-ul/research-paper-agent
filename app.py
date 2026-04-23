@@ -186,6 +186,8 @@ with st.sidebar:
         # Failsafe to hide suggestions if DB is empty
         st.session_state["suggested_questions"] = []
 
+    st.session_state["grandma_mode"] = st.toggle("👵 Grandma Mode", value=st.session_state.get("grandma_mode", False), help="Explains dense academic concepts in very simple, everyday language.")
+
     st.divider()
 
     col_a, col_b = st.columns(2)
@@ -283,6 +285,7 @@ with tab_chat:
                             user_input=prompt,
                             chat_history=history_str,
                             indexed_sources=indexed,
+                            grandma_mode=st.session_state.get("grandma_mode", False)
                         )
                     except Exception as e:
                         error_msg = str(e).lower()
