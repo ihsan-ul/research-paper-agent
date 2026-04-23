@@ -1,7 +1,6 @@
 """
 app.py — Research Paper Intelligence Agent
 Streamlit frontend — upload PDFs, chat with the multi-agent system.
-# source_handbook: week11-hackathon-preparation
 """
 
 import time
