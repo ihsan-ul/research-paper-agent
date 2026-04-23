@@ -181,32 +181,36 @@ with tab_chat:
         "The multi-agent pipeline retrieves from your PDFs, searches the web, and synthesises grounded answers."
     )
 
-    # --- NEW: Initialize state for suggested questions and active prompts ---
     if "active_prompt" not in st.session_state:
         st.session_state["active_prompt"] = None
     if "suggested_questions" not in st.session_state:
         st.session_state["suggested_questions"] = []
 
-    history = get_history(st.session_state)
-    if not history:
-        with st.chat_message("assistant"):
-            st.markdown(
-                "👋 Hello! Upload one or more research papers in the sidebar, "
-                "then ask me anything about them.\n\n"
-                "**Things I can do:**\n"
-                "- 📖 Answer questions from your papers (RAG + Cohere reranking)\n"
-                "- 🌐 Search the web for recent research (Tavily)\n"
-                "- 📝 Generate structured paper summaries\n"
-                "- 🔍 Compare methods or findings across papers\n"
-                "- 🛡️ Protected against prompt injection (see the Guardrail Demo tab)"
-            )
+    # --- FIX: Create a dedicated container for the chat messages ---
+    # Everything put in this container will ALWAYS stay above the chat input.
+    chat_container = st.container()
 
-    for msg in history:
-        role = "user" if msg.__class__.__name__ == "HumanMessage" else "assistant"
-        with st.chat_message(role):
-            st.markdown(msg.content)
+    with chat_container:
+        history = get_history(st.session_state)
+        if not history:
+            with st.chat_message("assistant"):
+                st.markdown(
+                    "👋 Hello! Upload one or more research papers in the sidebar, "
+                    "then ask me anything about them.\n\n"
+                    "**Things I can do:**\n"
+                    "- 📖 Answer questions from your papers (RAG + Cohere reranking)\n"
+                    "- 🌐 Search the web for recent research (Tavily)\n"
+                    "- 📝 Generate structured paper summaries\n"
+                    "- 🔍 Compare methods or findings across papers\n"
+                    "- 🛡️ Protected against prompt injection (see the Guardrail Demo tab)"
+                )
 
-    # --- NEW: Display suggested questions as clickable buttons ---
+        for msg in history:
+            role = "user" if msg.__class__.__name__ == "HumanMessage" else "assistant"
+            with st.chat_message(role):
+                st.markdown(msg.content)
+
+    # Suggested questions sit between the chat history and the input box
     if st.session_state.get("suggested_questions"):
         st.markdown("💡 **Suggested Questions:**")
         for q in st.session_state["suggested_questions"]:
@@ -214,62 +218,63 @@ with tab_chat:
                 st.session_state["active_prompt"] = q
                 st.session_state["suggested_questions"] = [] # Clear them after clicking
                 st.rerun()
-    # -------------------------------------------------------------
 
-    # Handle input from EITHER the chat box OR a clicked button
+    # Chat input is rendered last, pinning it to the bottom
     user_typed = st.chat_input("Ask about your research papers…")
     prompt = user_typed or st.session_state["active_prompt"]
 
     if prompt:
-        st.session_state["active_prompt"] = None # Reset the button prompt so it doesn't loop
+        st.session_state["active_prompt"] = None # Reset the button prompt
         
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        append_user_message(st.session_state, prompt)
+        # --- FIX: Render new messages INSIDE the chat_container ---
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            append_user_message(st.session_state, prompt)
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking…"):
-                indexed = list_indexed_sources()
-                history_str = format_history_for_prompt(st.session_state)
-                result = run_agent(
-                    user_input=prompt,
-                    chat_history=history_str,
-                    indexed_sources=indexed,
-                )
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking…"):
+                    indexed = list_indexed_sources()
+                    history_str = format_history_for_prompt(st.session_state)
+                    result = run_agent(
+                        user_input=prompt,
+                        chat_history=history_str,
+                        indexed_sources=indexed,
+                    )
 
-            if not result.get("guard_passed"):
-                reason = result.get("guard_reason", "Input blocked by safety guardrail.")
-                st.markdown('<span class="guard-badge">🛡️ BLOCKED by guardrail</span>', unsafe_allow_html=True)
-                response_text = (
-                    f"⚠️ **I couldn't process that request.**\n\n"
-                    f"**Reason:** {reason}\n\n"
-                    "Please rephrase your question about the research papers."
-                )
-                st.markdown(response_text)
-                append_ai_message(st.session_state, response_text)
-            else:
-                route = result.get("route", "—")
-                route_labels = {
-                    "rag":       "📖 RAG · Papers",
-                    "web":       "🌐 Web Search",
-                    "both":      "📖 RAG + 🌐 Web",
-                    "summarize": "📝 Summarizer",
-                    "chat":      "💬 Chat",
-                }
-                badge = route_labels.get(route, route)
-                st.markdown(f'<span class="route-badge">{badge}</span>', unsafe_allow_html=True)
+                if not result.get("guard_passed"):
+                    reason = result.get("guard_reason", "Input blocked by safety guardrail.")
+                    st.markdown('<span class="guard-badge">🛡️ BLOCKED by guardrail</span>', unsafe_allow_html=True)
+                    response_text = (
+                        f"⚠️ **I couldn't process that request.**\n\n"
+                        f"**Reason:** {reason}\n\n"
+                        "Please rephrase your question about the research papers."
+                    )
+                    st.markdown(response_text)
+                    append_ai_message(st.session_state, response_text)
+                else:
+                    route = result.get("route", "—")
+                    route_labels = {
+                        "rag":       "📖 RAG · Papers",
+                        "web":       "🌐 Web Search",
+                        "both":      "📖 RAG + 🌐 Web",
+                        "summarize": "📝 Summarizer",
+                        "chat":      "💬 Chat",
+                    }
+                    badge = route_labels.get(route, route)
+                    st.markdown(f'<span class="route-badge">{badge}</span>', unsafe_allow_html=True)
 
-                answer = result.get("final_answer") or "I couldn't generate a response. Please try again."
-                st.markdown(answer)
+                    answer = result.get("final_answer") or "I couldn't generate a response. Please try again."
+                    st.markdown(answer)
 
-                if result.get("rag_context") and route in {"rag", "both"}:
-                    with st.expander("📎 Retrieved context (RAG)", expanded=False):
-                        st.text(result["rag_context"][:2000])
-                if result.get("web_context") and route in {"web", "both"}:
-                    with st.expander("🌐 Web search results", expanded=False):
-                        st.text(result["web_context"][:2000])
+                    if result.get("rag_context") and route in {"rag", "both"}:
+                        with st.expander("📎 Retrieved context (RAG)", expanded=False):
+                            st.text(result["rag_context"][:2000])
+                    if result.get("web_context") and route in {"web", "both"}:
+                        with st.expander("🌐 Web search results", expanded=False):
+                            st.text(result["web_context"][:2000])
 
-                append_ai_message(st.session_state, answer)
+                    append_ai_message(st.session_state, answer)
 
 
 # ════════════════════════════════════════════════════════════════════════════
