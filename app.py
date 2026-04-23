@@ -292,7 +292,7 @@ with tab_chat:
                             st.error("⚠️ Groq is a bit overwhelmed! Please wait 10 seconds and try again.")
                         else:
                             st.error(f"❌ An error occurred: {e}")
-                    return # Exit early so the code below doesn't crash
+                        st.stop()
 
                 # 3. Process the results if the run was successful
                 if not result.get("guard_passed"):
