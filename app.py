@@ -30,7 +30,7 @@ st.set_page_config(
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .block-container { padding-top: 1.5rem; }
+    .block-container { padding-top: 3rem; }
     .stChatMessage { border-radius: 12px; }
     .route-badge {
         display: inline-block;
