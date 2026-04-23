@@ -110,16 +110,6 @@ st.markdown("""
         font-family: var(--font-mono);
     }
 
-    /* ── Sidebar Title ── */
-    [data-testid="stSidebar"] h1 {
-        font-family: var(--font-sans);
-        font-weight: 700;
-        font-size: 1.1rem !important;
-        letter-spacing: -0.01em;
-        color: var(--text-primary) !important;
-        margin-bottom: 1rem;
-    }
-
     /* ── Sidebar subheaders ── */
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
@@ -724,18 +714,28 @@ with tab_chat:
                         st.stop()
 
                 if not result.get("guard_passed"):
+                    # Here is the detailed guardrail explanation logic matched with the new styling!
+                    reason = result.get("guard_reason", "Input blocked by safety guardrail.")
                     st.markdown(
                         '<span class="route-badge route-rag" style="background:rgba(255,107,107,0.08);'
-                        'border-color:rgba(255,107,107,0.25);color:#ff6b6b;">🛡 blocked</span>',
+                        'border-color:rgba(255,107,107,0.25);color:#ff6b6b;">🛡️ BLOCKED BY GUARDRAIL</span>',
                         unsafe_allow_html=True,
                     )
-                    st.markdown("Input was blocked by the guardrail layer.")
+                    response_text = (
+                        f"⚠️ **I couldn't process that request.**\n\n"
+                        f"**Reason:** {reason}\n\n"
+                        "Please rephrase your question about the research papers."
+                    )
+                    st.markdown(response_text)
+                    append_ai_message(st.session_state, response_text)
                 else:
                     route = result.get("route", "—")
                     badge_map = {
                         "rag":  ('<span class="route-badge route-rag">📖 RAG</span>', ),
                         "web":  ('<span class="route-badge route-web">🌐 Web</span>', ),
                         "both": ('<span class="route-badge route-both">📖 + 🌐 Hybrid</span>', ),
+                        "summarize": ('<span class="route-badge route-both">📝 Summarizer</span>', ),
+                        "chat": ('<span class="route-badge route-web">💬 Chat</span>', ),
                     }
                     badge_html = badge_map.get(route, (f'<span class="route-badge route-rag">{route}</span>',))[0]
                     st.markdown(badge_html, unsafe_allow_html=True)
@@ -743,9 +743,12 @@ with tab_chat:
                     answer = result.get("final_answer") or "No response generated."
                     st.markdown(answer)
 
-                    if result.get("rag_context"):
-                        with st.expander("📎 Source context"):
+                    if result.get("rag_context") and route in {"rag", "both"}:
+                        with st.expander("📎 Source context (RAG)"):
                             st.text(result["rag_context"][:1000])
+                    if result.get("web_context") and route in {"web", "both"}:
+                        with st.expander("🌐 Web search results"):
+                            st.text(result["web_context"][:1000])
 
                     append_ai_message(st.session_state, answer)
 
