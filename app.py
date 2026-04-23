@@ -156,12 +156,13 @@ with st.sidebar:
                     else:
                         st.info(f"ℹ️ {uploaded_file.name}: already indexed")
 
-                    # 3. Generate questions ONLY for the targeted file
-                    if uploaded_file.name == target_file and not st.session_state.get("suggested_questions"):
+                    # 3. Generate a POOL of questions
+                    if not st.session_state.get("suggested_questions"):
                         with st.spinner(f"Generating questions for {uploaded_file.name}..."):
                             try:
                                 first_chunk_text = docs[0].page_content
-                                questions = generate_suggested_questions(first_chunk_text)
+                                # Ask your LLM for ~6 questions instead of 3
+                                questions = generate_suggested_questions(first_chunk_text) 
                                 if questions:
                                     st.session_state["suggested_questions"] = questions
                             except Exception:
@@ -245,16 +246,24 @@ with tab_chat:
             with st.chat_message(role):
                 st.markdown(msg.content)
 
-    if not st.session_state.get("suggested_questions"):
-                        with st.spinner(f"Generating questions for {uploaded_file.name}..."):
-                            try:
-                                first_chunk_text = docs[0].page_content
-                                # Ask your LLM for ~6 questions instead of 3
-                                questions = generate_suggested_questions(first_chunk_text) 
-                                if questions:
-                                    st.session_state["suggested_questions"] = questions
-                            except Exception:
-                                pass
+    # 3. Dynamic Suggested Questions
+    # Only show if there's no active prompt processing and the list isn't empty
+    if st.session_state.get("suggested_questions") and not st.session_state.get("active_prompt"):
+        st.markdown("💡 **Suggested Questions:**")
+        
+        # We only show the first 3 in the list
+        suggestions_to_show = st.session_state["suggested_questions"][:3]
+        
+        for q in suggestions_to_show:
+            # Use the question string itself as the key to avoid index-mismatch bugs
+            if st.button(q, key=f"btn_{q}", use_container_width=True):
+                st.session_state["active_prompt"] = q
+                
+                # --- THE FIX: Remove the clicked question from the pool ---
+                st.session_state["suggested_questions"].remove(q)
+                # ----------------------------------------------------------
+                
+                st.rerun()
 
     # Chat input is rendered last, pinning it to the bottom
     user_typed = st.chat_input("Ask about your research papers…")
