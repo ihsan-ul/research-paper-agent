@@ -16,6 +16,7 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Key Design Decisions](#key-design-decisions)
+- [Screenshots](#screenshots)
 - [Setup & Local Development](#setup--local-development)
 
 ---
@@ -31,6 +32,21 @@ The application was built as part of the **MSc Data Science & AI — Generative 
 ## Live Demo
 
 Deployed on **Streamlit Community Cloud**. API keys are stored in Streamlit's Secrets manager and accessed at runtime via [`config/settings.py`](config/settings.py).
+
+---
+
+## Screenshots
+
+> Drop your image files into [`docs/images/`](docs/images/) and they will render here automatically.
+
+### Research Chat Tab
+![Research Chat](docs/images/chat.png)
+
+### Guardrail Demo Tab
+![Guardrail Demo](docs/images/guardrail.png)
+
+### Agent Architecture Tab
+![Agent Architecture](docs/images/architecture.png)
 
 ---
 
@@ -318,6 +334,6 @@ The app will be available at `http://localhost:8501`.
 | **Module** | CST4265 — GenAI and LLMs |
 | **Department** | Computer Engineering and Informatics (CEI) |
 | **Programme** | MSc Data Science & AI |
-| **Student** | Ivan Joseph Thomas (M01093025) |
+| **Students** | Ivan Joseph Thomas (M01093025) and Ihsan Ul Haque (M01098089) |
 | **Module Leader** | Dr. Ivan Reznikov |
 | **Submission Date** | 23/04/2026 |
