@@ -61,13 +61,14 @@ def guardrail_node(state: AgentState) -> AgentState:
 _ROUTER_SYSTEM = """You are a routing agent for a research paper assistant.
 Given the user's message and the list of indexed papers, decide the best action:
 
-- "rag"       → answer using the uploaded papers only
-- "web"       → answer using a web search only (no relevant papers uploaded)
-- "both"      → answer using BOTH papers and web search
-- "summarize" → user is asking for a summary of one of the uploaded papers
-- "chat"      → general conversation, no retrieval needed
+- "both"      → ALWAYS use this for complex research questions, comparisons, 
+                or when synthesis between papers and general knowledge is needed.
+- "rag"       → use ONLY if the user asks for a very specific detail known to be in a paper.
+- "web"       → use if no relevant papers are uploaded.
+- "summarize" → user asks for a summary of a specific uploaded paper.
+- "chat"      → general greeting or conversation.
 
-Reply with ONLY one of those five words.
+Reply with ONLY one of those five words. Prioritize "both" for deep research.
 """
 
 def router_node(state: AgentState) -> AgentState:
@@ -131,15 +132,15 @@ def summarizer_node(state: AgentState) -> AgentState:
 
 # ── Node 6: Synthesizer ───────────────────────────────────────────────────────
 
-_SYNTH_SYSTEM = """You are an expert academic research assistant.
-Your role is to give precise, well-grounded answers about research papers.
+_SYNTH_SYSTEM = """You are an expert academic research assistant specializing in synthesis.
+Your goal is to provide a comprehensive answer by cross-referencing multiple sources.
 
 Rules:
-- Always ground your answer in the provided context.
-- If citing a paper, mention the source filename and page number.
-- Do NOT hallucinate — if you don't know, say so.
-- Be concise but complete.
-- Use markdown formatting (headers, bullets) for clarity.
+- Compare and contrast information found in the uploaded papers with information from the web.
+- Highlight where the sources agree or where the web provides more recent context.
+- Always ground your answer in the provided context and cite filenames/pages for papers.
+- If the papers and web provide conflicting info, report both perspectives.
+- Do NOT hallucinate. Use markdown (headers, bolding, bullets) for professional structure.
 """
 
 def synthesizer_node(state: AgentState) -> AgentState:
@@ -184,14 +185,27 @@ def after_router(state: AgentState) -> str:
     elif route == "web":
         return "web_agent"
     elif route == "both":
-        return "rag_agent"      # rag runs first; both handled via sequential edges
+        return "rag_agent" # Sequence: RAG -> then Web
     elif route == "summarize":
         return "summarizer"
     else:
-        return "synthesizer"    # "chat" — skip retrieval
+        return "synthesizer"
 
 def after_rag(state: AgentState) -> str:
-    return "web_agent" if state.get("route") == "both" else "synthesizer"
+    """
+    Decides whether to proceed to web search.
+    - Proceeds if route is 'both'.
+    - FALLBACK: Proceeds if RAG found no relevant content.
+    """
+    if state.get("route") == "both":
+        return "web_agent"
+    
+    # Check if RAG tool returned its 'not found' message
+    rag_out = state.get("rag_context", "")
+    if "No relevant content found" in rag_out:
+        return "web_agent"
+        
+    return "synthesizer"
 
 
 # ── Build the graph ───────────────────────────────────────────────────────────
