@@ -63,6 +63,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("🔬 Research Agent")
     st.caption("Powered by Groq · LangGraph · ChromaDB")
@@ -90,11 +91,16 @@ with st.sidebar:
         key=f"uploader_{st.session_state['uploader_key']}"
     )
 
-    # 2. Detect if the user added or removed a file (like clicking 'X')
+    # 2. Detect newly added files to target the right one for questions
     current_filenames = [f.name for f in uploaded_files] if uploaded_files else []
+    newly_added_files = [f for f in current_filenames if f not in st.session_state["previous_uploaded_files"]]
+    
     if current_filenames != st.session_state["previous_uploaded_files"]:
         st.session_state["previous_uploaded_files"] = current_filenames
         st.session_state["suggested_questions"] = []  # Clear stale questions instantly
+
+    # Target the newest file for questions (or fallback to the first file if one was deleted)
+    target_file = newly_added_files[-1] if newly_added_files else (current_filenames[0] if current_filenames else None)
 
     if uploaded_files:
         for uploaded_file in uploaded_files:
@@ -108,9 +114,8 @@ with st.sidebar:
                     else:
                         st.info(f"ℹ️ {uploaded_file.name}: already indexed")
 
-                    # 3. Generate questions IF we don't currently have any
-                    # (This runs even if n=0, fixing the re-upload bug!)
-                    if not st.session_state.get("suggested_questions"):
+                    # 3. Generate questions ONLY for the targeted file
+                    if uploaded_file.name == target_file and not st.session_state.get("suggested_questions"):
                         with st.spinner(f"Generating questions for {uploaded_file.name}..."):
                             try:
                                 first_chunk_text = docs[0].page_content
@@ -131,7 +136,7 @@ with st.sidebar:
             st.markdown(f"- `{src}`")
     else:
         st.caption("No papers indexed yet.")
-        
+        # Failsafe to hide suggestions if DB is empty
         st.session_state["suggested_questions"] = []
 
     st.divider()
@@ -143,9 +148,7 @@ with st.sidebar:
     if col_b.button("💥 Clear DB", use_container_width=True):
         clear_collection()
         st.session_state["uploader_key"] += 1 
-        
         st.session_state["suggested_questions"] = [] 
-        
         st.success("Vector store cleared.")
         st.rerun()
 
