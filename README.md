@@ -11,6 +11,7 @@
 - [API Keys & External Services](#api-keys--external-services)
 - [Application Workflow](#application-workflow)
 - [Guardrail System](#guardrail-system)
+- [Grandma Mode](#grandma-mode)
 - [RAG Implementation](#rag-implementation)
 - [Agent Architecture](#agent-architecture)
 - [Tech Stack](#tech-stack)
@@ -111,6 +112,41 @@ If Layer 1 passes, the input is sent to `llama-3.1-8b-instant` on Groq with a sy
 The classifier returns a structured verdict with a boolean `is_safe` flag and a `reason` string. Only inputs that pass **both layers** proceed to the router.
 
 > The **Guardrail Demo** tab lets users test arbitrary inputs against both layers in real time, with latency measurements displayed for each layer. Preset attack examples include direct injection, persona hijacking, off-topic requests, and subtle social-engineering attempts.
+
+---
+
+## Grandma Mode
+
+**Grandma Mode** is an optional response-style toggle available in the sidebar of the application. When enabled, the synthesiser rewrites its final answer using plain, everyday language — stripping out all academic jargon and replacing complex concepts with warm, relatable analogies.
+
+### How to Enable
+
+Toggle the **👵 Grandma Mode** switch in the left sidebar. The toggle persists for the duration of the session and can be turned on or off at any time between questions.
+
+### How It Works
+
+The toggle sets a boolean flag (`grandma_mode`) in [`st.session_state`](app.py:189) which is passed directly into [`run_agent()`](agents/research_agent.py:267) as part of the initial [`AgentState`](agents/research_agent.py:32).
+
+Inside the [`synthesizer_node()`](agents/research_agent.py:147), if `grandma_mode` is `True`, an additional instruction is appended to the synthesiser's system prompt before the LLM call:
+
+```
+🚨 GRANDMA MODE ENABLED: You must explain your final answer using very simple,
+patient, and everyday language. Assume the reader is an elderly relative with zero
+academic or technical background. Use warm, relatable analogies and absolutely
+NO academic jargon.
+```
+
+This modifier is injected at runtime — no separate model or pipeline is used. The same `llama-3.3-70b-versatile` model produces the response, but with a fundamentally different persona and communication style.
+
+### Design Intent
+
+| Normal Mode | Grandma Mode |
+|-------------|--------------|
+| Academic, structured markdown with headers and citations | Conversational, plain English with everyday analogies |
+| Targeted at researchers, students, and domain experts | Targeted at non-technical readers or general audiences |
+| Uses technical terminology from the paper | Avoids jargon; explains concepts from first principles |
+
+> **Example:** A normal-mode answer might say *"The model achieves state-of-the-art performance via contrastive self-supervised pre-training on unlabelled corpora."* Grandma Mode would rephrase this as *"Think of it like teaching a child by showing them lots of examples without telling them the answers — the computer figures out the patterns on its own, and it turns out to be really good at it!"*
 
 ---
 

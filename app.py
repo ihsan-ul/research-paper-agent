@@ -223,7 +223,7 @@ with tab_chat:
     with header_col1:
         st.title("🔬")
     with header_col2:
-        st.title("Research Intelligence Agent")
+        st.title("Research Intelligence Agent by Ihsan (M01098089) & Ivan ( M01093025)")
         st.caption("AI-Powered Synthesis & Multi-Agent Retrieval")
     
     st.markdown("---")
