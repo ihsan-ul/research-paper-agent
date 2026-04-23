@@ -273,21 +273,28 @@ with tab_chat:
         st.session_state["active_prompt"] = None # Reset the button prompt
         
         # --- FIX: Render new messages INSIDE the chat_container ---
-        with chat_container:
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            append_user_message(st.session_state, prompt)
-
-            with st.chat_message("assistant"):
+        with st.chat_message("assistant"):
                 with st.spinner("Thinking…"):
-                    indexed = list_indexed_sources()
-                    history_str = format_history_for_prompt(st.session_state)
-                    result = run_agent(
-                        user_input=prompt,
-                        chat_history=history_str,
-                        indexed_sources=indexed,
-                    )
+                    try:
+                        # 1. Gather context
+                        indexed = list_indexed_sources()
+                        history_str = format_history_for_prompt(st.session_state)
+                        
+                        # 2. Run the agent with Error Handling
+                        result = run_agent(
+                            user_input=prompt,
+                            chat_history=history_str,
+                            indexed_sources=indexed,
+                        )
+                    except Exception as e:
+                        # Catch the Groq Rate Limit specifically
+                        if "rate_limit" in str(e).lower():
+                            st.error("⚠️ Groq is a bit overwhelmed! Please wait 10 seconds and try again.")
+                        else:
+                            st.error(f"❌ An error occurred: {e}")
+                        return # Exit early so the code below doesn't crash
 
+                # 3. Process the results if the run was successful
                 if not result.get("guard_passed"):
                     reason = result.get("guard_reason", "Input blocked by safety guardrail.")
                     st.markdown('<span class="guard-badge">🛡️ BLOCKED by guardrail</span>', unsafe_allow_html=True)
@@ -298,6 +305,7 @@ with tab_chat:
                     )
                     st.markdown(response_text)
                     append_ai_message(st.session_state, response_text)
+                
                 else:
                     route = result.get("route", "—")
                     route_labels = {
