@@ -273,7 +273,7 @@ def get_graph():
     return _compiled_graph
 
 
-def run_agent(user_input: str, chat_history: str, indexed_sources: List[str]) -> dict:
+def run_agent(user_input: str, chat_history: str, indexed_sources: List[str], grandma_mode: bool = False) -> dict:
     """
     Main entry point called by the Streamlit frontend.
     Returns the full final state dict.
