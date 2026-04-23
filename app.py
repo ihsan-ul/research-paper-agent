@@ -211,12 +211,11 @@ tab_chat, tab_guard, tab_arch = st.tabs([
 # TAB 1 — RESEARCH CHAT
 # ════════════════════════════════════════════════════════════════════════════
 with tab_chat:
-    header_col1, header_col2 = st.columns([0.1, 0.9])
-    with header_col1:
-        st.title("🔬")
-    with header_col2:
-        st.title("Research Intelligence Agent")
-        st.caption("AI-Powered Synthesis & Multi-Agent Retrieval")
+    st.title("🔬 Research Paper Intelligence Agent")
+    st.caption(
+        "Upload papers in the sidebar, then ask anything. "
+        "The multi-agent pipeline retrieves from your PDFs, searches the web, and synthesises grounded answers."
+    )
     
     st.markdown("---")
 
