@@ -216,7 +216,7 @@ tab_chat, tab_guard, tab_arch = st.tabs([
 # TAB 1 — RESEARCH CHAT
 # ════════════════════════════════════════════════════════════════════════════
 with tab_chat:
-    # 1. Centered "Center Stage" Header
+    # 1. Header
     header_col1, header_col2 = st.columns([0.1, 0.9])
     with header_col1:
         st.title("🔬")
@@ -226,103 +226,79 @@ with tab_chat:
     
     st.markdown("---")
 
-    # --- FIX: Create a dedicated container for the chat messages ---
-    # Everything put in this container will ALWAYS stay above the chat input.
+    # 2. The Message Container
     chat_container = st.container()
 
+    # Render History
     with chat_container:
         history = get_history(st.session_state)
         if not history:
             with st.chat_message("assistant"):
-                st.markdown(
-                    "👋 Hello! Upload one or more research papers in the sidebar, "
-                    "then ask me anything about them.\n\n"
-                    "**Things I can do:**\n"
-                    "- 📖 Answer questions from your papers (RAG + Cohere reranking)\n"
-                    "- 🌐 Search the web for recent research (Tavily)\n"
-                    "- 📝 Generate structured paper summaries\n"
-                    "- 🔍 Compare methods or findings across papers\n"
-                    "- 🛡️ Protected against prompt injection (see the Guardrail Demo tab)"
-                )
+                st.markdown("👋 Hello! Upload papers in the sidebar to get started.")
 
         for msg in history:
             role = "user" if msg.__class__.__name__ == "HumanMessage" else "assistant"
             with st.chat_message(role):
                 st.markdown(msg.content)
 
-    # 3. Dynamic Suggested Questions
-    # Only show if there's no active prompt processing and the list isn't empty
-    if st.session_state.get("suggested_questions"):
+    # 3. Suggested Questions (Keep them above the input)
+    if st.session_state.get("suggested_questions") and not st.session_state.get("active_prompt"):
         st.markdown("💡 **Suggested Questions:**")
-        for idx, q in enumerate(st.session_state["suggested_questions"]):
-            # Full-width buttons ensure the entire research question is visible
-            if st.button(q, key=f"btn_{idx}", use_container_width=True):
+        suggestions_to_show = st.session_state["suggested_questions"][:3]
+        for q in suggestions_to_show:
+            if st.button(q, key=f"btn_{q}", use_container_width=True):
                 st.session_state["active_prompt"] = q
-                st.session_state["suggested_questions"] = [] # Clear them after selection
+                st.session_state["suggested_questions"].remove(q)
                 st.rerun()
 
-    # Chat input is rendered last, pinning it to the bottom
+    # 4. THE INPUT BAR (Positioned here so it stays at the bottom)
     user_typed = st.chat_input("Ask about your research papers…")
     prompt = user_typed or st.session_state.get("active_prompt")
 
+    # 5. THE PROCESSING LOGIC
     if prompt:
-        st.session_state["active_prompt"] = None # Reset the button prompt
+        st.session_state["active_prompt"] = None 
         
-        # --- FIX: Render new messages INSIDE the chat_container ---
-        with st.chat_message("assistant"):
+        # --- CRITICAL FIX: Wrap everything in chat_container ---
+        with chat_container:
+            # A. Immediately show the User's question
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            append_user_message(st.session_state, prompt)
+
+            # B. Immediately show the Assistant's response
+            with st.chat_message("assistant"):
                 with st.spinner("Thinking…"):
                     try:
-                        # 1. Gather context
                         indexed = list_indexed_sources()
                         history_str = format_history_for_prompt(st.session_state)
-                        
-                        # 2. Run the agent with Error Handling
                         result = run_agent(
                             user_input=prompt,
                             chat_history=history_str,
                             indexed_sources=indexed,
                         )
                     except Exception as e:
-                        # Catch the Groq Rate Limit specifically
                         if "rate_limit" in str(e).lower():
-                            st.error("⚠️ Groq is a bit overwhelmed! Please wait 10 seconds and try again.")
+                            st.error("⚠️ Groq is overwhelmed! Please wait 10s.")
                         else:
-                            st.error(f"❌ An error occurred: {e}")
+                            st.error(f"❌ Error: {e}")
                         st.stop()
 
-                # 3. Process the results if the run was successful
+                # C. Render the result details
                 if not result.get("guard_passed"):
-                    reason = result.get("guard_reason", "Input blocked by safety guardrail.")
-                    st.markdown('<span class="guard-badge">🛡️ BLOCKED by guardrail</span>', unsafe_allow_html=True)
-                    response_text = (
-                        f"⚠️ **I couldn't process that request.**\n\n"
-                        f"**Reason:** {reason}\n\n"
-                        "Please rephrase your question about the research papers."
-                    )
-                    st.markdown(response_text)
-                    append_ai_message(st.session_state, response_text)
-                
+                    st.markdown("🛡️ **Blocked by guardrail**")
                 else:
                     route = result.get("route", "—")
-                    route_labels = {
-                        "rag":       "📖 RAG · Papers",
-                        "web":       "🌐 Web Search",
-                        "both":      "📖 RAG + 🌐 Web",
-                        "summarize": "📝 Summarizer",
-                        "chat":      "💬 Chat",
-                    }
-                    badge = route_labels.get(route, route)
-                    st.markdown(f'<span class="route-badge">{badge}</span>', unsafe_allow_html=True)
+                    route_labels = {"rag": "📖 RAG", "web": "🌐 Web", "both": "📖+🌐"}
+                    st.markdown(f'`{route_labels.get(route, route)}`')
 
-                    answer = result.get("final_answer") or "I couldn't generate a response. Please try again."
+                    answer = result.get("final_answer") or "No response."
                     st.markdown(answer)
-
-                    if result.get("rag_context") and route in {"rag", "both"}:
-                        with st.expander("📎 Retrieved context (RAG)", expanded=False):
-                            st.text(result["rag_context"][:2000])
-                    if result.get("web_context") and route in {"web", "both"}:
-                        with st.expander("🌐 Web search results", expanded=False):
-                            st.text(result["web_context"][:2000])
+                    
+                    # Show context expanders
+                    if result.get("rag_context"):
+                        with st.expander("📎 View Paper Context"):
+                            st.text(result["rag_context"][:1000])
 
                     append_ai_message(st.session_state, answer)
 
