@@ -33,6 +33,7 @@ class AgentState(TypedDict):
     user_input: str
     chat_history: str                           # formatted conversation turns
     indexed_sources: List[str]                  # filenames in the vector store
+    grandma_mode: bool
     guard_passed: bool
     guard_reason: Optional[str]
     route: Optional[str]                        # "rag" | "web" | "both" | "summarize"
@@ -125,6 +126,15 @@ def summarizer_node(state: AgentState) -> AgentState:
     filename = response.content.strip()
     if filename not in sources:
         filename = sources[0]
+    # Check for Grandma mode and modify the system prompt
+    sys_prompt = _SUMMARIZER_SYSTEM
+    if state.get("grandma_mode"):
+        sys_prompt += "\n\nCRITICAL INSTRUCTION: The user has enabled 'Grandma Mode'. You must summarize the paper using extremely simple, patient, and everyday language. Assume the reader is a grandparent with zero academic or technical background. Use warm, relatable analogies and avoid all jargon."
+
+    state["final_answer"] = summarize_paper_tool.invoke(
+        {"filename": filename}, # passing as dict for standard tool calling
+        config={"callbacks": []} # optional, just clean tool calling
+    )
 
     state["final_answer"] = summarize_paper_tool.invoke(filename)
     return state
@@ -150,10 +160,22 @@ def synthesizer_node(state: AgentState) -> AgentState:
     if state.get("web_context"):
         context_parts.append(f"[From web search]\n{state['web_context']}")
 
+    # Setup the base system prompt
+    system_instruction = _SYNTH_SYSTEM
+    
+    # Inject the Grandma Mode modifier if active
+    if state.get("grandma_mode"):
+        system_instruction += (
+            "\n\n🚨 GRANDMA MODE ENABLED: You must explain your final answer using very simple, "
+            "patient, and everyday language. Assume the reader is an elderly relative with zero "
+            "academic or technical background. Use warm, relatable analogies and absolutely "
+            "NO academic jargon."
+        )
+
     if not context_parts:
         # Pure chat mode
         response = _llm().invoke([
-            SystemMessage(content=_SYNTH_SYSTEM),
+            SystemMessage(content=system_instruction),
             HumanMessage(content=f"History:\n{state['chat_history']}\n\nUser: {state['user_input']}"),
         ])
         state["final_answer"] = response.content
@@ -166,7 +188,7 @@ def synthesizer_node(state: AgentState) -> AgentState:
         f"User question: {state['user_input']}"
     )
     response = _llm().invoke([
-        SystemMessage(content=_SYNTH_SYSTEM),
+        SystemMessage(content=system_instruction),
         HumanMessage(content=prompt),
     ])
     state["final_answer"] = response.content
@@ -261,6 +283,7 @@ def run_agent(user_input: str, chat_history: str, indexed_sources: List[str]) ->
         "user_input": user_input,
         "chat_history": chat_history,
         "indexed_sources": indexed_sources,
+        "grandma_mode": grandma_mode,
         "guard_passed": False,
         "guard_reason": None,
         "route": None,
