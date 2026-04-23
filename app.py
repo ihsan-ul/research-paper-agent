@@ -20,6 +20,12 @@ from memory.session_memory import (
     format_history_for_prompt,
 )
 
+if "active_prompt" not in st.session_state:
+    st.session_state["active_prompt"] = None
+
+if "suggested_questions" not in st.session_state:
+    st.session_state["suggested_questions"] = []
+
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Research Paper Agent",
@@ -257,7 +263,7 @@ with tab_chat:
 
     # Chat input is rendered last, pinning it to the bottom
     user_typed = st.chat_input("Ask about your research papers…")
-    prompt = user_typed or st.session_state["active_prompt"]
+    prompt = user_typed or st.session_state.get("active_prompt")
 
     if prompt:
         st.session_state["active_prompt"] = None # Reset the button prompt
