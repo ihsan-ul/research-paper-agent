@@ -52,15 +52,15 @@ How it works?
 
 Tech Stack?
 LLM’s:
-LangGraph
-LangChain
+LangGraph, 
+LangChain, 
 Groq
 
 Vector Database & Retrieval (RAG):
-ChromaDB
-HuggingFace - all-MiniLM-L6-v2
+ChromaDB, 
+HuggingFace - all-MiniLM-L6-v2, 
 Cohere
 
 Frontend:
-Streamlit
+Streamlit, 
 LangSmith
