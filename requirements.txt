@@ -1,0 +1,31 @@
+# LLM & LangChain ecosystem
+langchain==0.3.25
+langchain-groq==0.3.2
+langchain-community==0.3.24
+langchain-huggingface==0.1.2
+langgraph==0.4.1
+langsmith==0.3.42
+
+# Vector store
+chromadb==0.6.3
+
+# Embeddings (local, no API key needed)
+sentence-transformers==3.4.1
+
+# PDF processing
+pypdf==5.4.0
+pdfplumber==0.11.5
+
+# Web search
+tavily-python==0.5.0
+
+# Reranking (Cohere free tier)
+cohere==5.13.12
+
+# Frontend
+streamlit==1.45.0
+
+# Utilities
+python-dotenv==1.1.0
+pydantic==2.11.4
+tiktoken==0.9.0
