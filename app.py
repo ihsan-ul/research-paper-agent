@@ -245,14 +245,16 @@ with tab_chat:
             with st.chat_message(role):
                 st.markdown(msg.content)
 
-    if st.session_state.get("suggested_questions"):
-        st.markdown("💡 **Suggested Questions:**")
-        for idx, q in enumerate(st.session_state["suggested_questions"]):
-            # Full-width buttons ensure the entire research question is visible
-            if st.button(q, key=f"btn_{idx}", use_container_width=True):
-                st.session_state["active_prompt"] = q
-                st.session_state["suggested_questions"] = [] # Clear them after selection
-                st.rerun()
+    if not st.session_state.get("suggested_questions"):
+                        with st.spinner(f"Generating questions for {uploaded_file.name}..."):
+                            try:
+                                first_chunk_text = docs[0].page_content
+                                # Ask your LLM for ~6 questions instead of 3
+                                questions = generate_suggested_questions(first_chunk_text) 
+                                if questions:
+                                    st.session_state["suggested_questions"] = questions
+                            except Exception:
+                                pass
 
     # Chat input is rendered last, pinning it to the bottom
     user_typed = st.chat_input("Ask about your research papers…")
