@@ -120,6 +120,8 @@ with st.sidebar:
             st.markdown(f"- `{src}`")
     else:
         st.caption("No papers indexed yet.")
+        
+        st.session_state["suggested_questions"] = []
 
     st.divider()
 
@@ -129,7 +131,10 @@ with st.sidebar:
         st.rerun()
     if col_b.button("💥 Clear DB", use_container_width=True):
         clear_collection()
-        st.session_state["uploader_key"] += 1  
+        st.session_state["uploader_key"] += 1 
+        
+        st.session_state["suggested_questions"] = [] 
+        
         st.success("Vector store cleared.")
         st.rerun()
 
