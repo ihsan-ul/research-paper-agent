@@ -126,15 +126,6 @@ def summarizer_node(state: AgentState) -> AgentState:
     filename = response.content.strip()
     if filename not in sources:
         filename = sources[0]
-    # Check for Grandma mode and modify the system prompt
-    sys_prompt = _SUMMARIZER_SYSTEM
-    if state.get("grandma_mode"):
-        sys_prompt += "\n\nCRITICAL INSTRUCTION: The user has enabled 'Grandma Mode'. You must summarize the paper using extremely simple, patient, and everyday language. Assume the reader is a grandparent with zero academic or technical background. Use warm, relatable analogies and avoid all jargon."
-
-    state["final_answer"] = summarize_paper_tool.invoke(
-        {"filename": filename}, # passing as dict for standard tool calling
-        config={"callbacks": []} # optional, just clean tool calling
-    )
 
     state["final_answer"] = summarize_paper_tool.invoke(filename)
     return state
